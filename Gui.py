@@ -4,7 +4,8 @@ from spotify import *
 
 SONG_LIST = []
 VOTES = []
-
+recommended_songs = []
+counter = 0
 WIDTH, HEIGHT = 1000, 550
 
 def main():
@@ -46,20 +47,18 @@ def create_window(width, height):
     else:
         widgets.insert(0, song_canvas.create_rectangle(WIDTH - 320, 0, WIDTH - 310, HEIGHT - 200, fill = "dark blue"))
     add_songs(widgets, song_canvas, SONG_LIST, songs_displayed)
-    song_canvas.config(scrollregion=(0,0,0, len(SONG_LIST) * 45))
+    song_canvas.config(scrollregion=(0,0,0, 45 + len(SONG_LIST) * 45))
 
     for i in range(0, len(VOTES)):
         widget_num = i * 7 + 1
         vote = VOTES[i]
         if vote == 'Like':
-            like(widget_num, song_canvas, widgets)
+            like(widget_num, song_canvas, widgets, songs_displayed)
         elif vote == 'Dislike':
-            dislike(widget_num, song_canvas, widgets)
+            dislike(widget_num, song_canvas, widgets, songs_displayed)
 
     search_button = Button(window, text="Search", command=get_search_text(search_text, song_canvas, widgets, songs_displayed), width= int(WIDTH / 75))
     search_button.place(x=int(WIDTH - WIDTH/4.5), y = 30)
-
-    add_song = Button(window, text="add_")
 
     return window, background, search_text, song_canvas, scroll_bar, widgets, songs_displayed
 
@@ -70,14 +69,19 @@ def get_search_text(search_text, song_canvas, widgets, songs_displayed):
         #if n > 0:
             #clear_songs(song_canvas, widgets, songs_displayed)
         song = Song(temp)
-        recommend_song(widgets, song_canvas, songs_displayed, song)
-        return temp
+        
+        global recommended_songs
+        song_list = song.get_related_songs()
+        recommended_songs = song_list[song.get_genres(song.artist_id)[0]]
+        recommend_song(widgets, song_canvas, songs_displayed)
     return fn
 
-def recommend_song(widgets, song_canvas, songs_displayed, song):
-    song_list = song.get_related_songs()
-    recommend_song = Song(song_list[0])
-    add_one_song(widgets, song_canvas, songs_displayed, recommend_song.track['name'])
+def recommend_song(widgets, song_canvas, songs_displayed):
+    global counter
+    temp = recommended_songs[counter]
+    add_one_song(widgets, song_canvas, songs_displayed, temp[0])
+    if len(recommended_songs) - 1 > counter:
+        counter += 1
 
 #Adds Songs and Votes Spaced out by 45 pixels
 def add_songs(widgets, canvas, songsArray, songs_displayed):
@@ -101,7 +105,7 @@ def add_one_song(widgets, canvas, songs_displayed, song):
     songs_displayed.append(song)
     create_upvote(widgets, canvas, WIDTH - 290, 10 + i * 45, 14, 28)
     create_downvote(widgets, canvas, WIDTH - 250, 10 + i * 45, 14, 28)
-    canvas.config(scrollregion=(0,0,0, len(SONG_LIST)* 45))
+    canvas.config(scrollregion=(0,0,0, 45 + len(SONG_LIST)* 45))
     x1, y1, x2, y2 = canvas.coords(widgets[0])
     y2 += 45
     canvas.coords(widgets[0], x1, y1, x2, y2)
@@ -112,9 +116,9 @@ def add_one_song(widgets, canvas, songs_displayed, song):
     else:
         vote = VOTES[SONG_LIST.index(song)]
         if vote == 'Like':
-            like(len(widgets) - 6, canvas, widgets)
+            like(len(widgets) - 6, canvas, widgets, songs_displayed)
         elif vote == 'Dislike':
-            dislike(len(widgets) - 3, canvas, widgets)
+            dislike(len(widgets) - 3, canvas, widgets, songs_displayed)
 
 def on_enter(widgets, canvas, songs_displayed, search_text):
     def fn(*args):
@@ -135,7 +139,7 @@ def clear_one_song(widgets, canvas, songs_displayed, song):
         widgets.remove(widgets[j])
     songs_displayed.remove(song)
     print(VOTES)
-    canvas.config(scrollregion=(0,0,0, len(songs_displayed) * 45))
+    canvas.config(scrollregion=(0,0,0, 45 + len(songs_displayed) * 45))
 
     for i in range(j, len(widgets)):
         canvas.move(widgets[i], 0, -45)
@@ -222,11 +226,11 @@ def is_disliked(song_canvas, song_num, widgets):
     return song_canvas.itemcget(widgets[7 * song_num -2], 'fill') == 'blue'
 
 #Returns whether the VOTE at the song index is Like
-def is_liked(song_name):
+def _is_liked(song_name):
     return VOTES[SONG_LIST.index(song_name)] == 'Like'
 
 #Returns whether the VOTE at the song index is Like
-def is_disliked(song_name):
+def _is_disliked(song_name):
     return VOTES[SONG_LIST.index(song_name)] == 'Dislike'
 
 #sets the like of the song number of the currently displayed songs to the reverse color and the dislike to white
@@ -241,11 +245,10 @@ def like(widget_num, canvas, widgets, songs_displayed):
     canvas.itemconfig(widgets[widget_num + 4], fill='white')
     canvas.itemconfig(widgets[widget_num + 5], fill='white', outline='white')
     
-    song_name = canvas.itemcget(widgets[widget_num - widget_num % 7 + 1], 'text')
     song_num = SONG_LIST.index(canvas.itemcget(widgets[widget_num - widget_num % 7 + 1], 'text'))
     VOTES[song_num] = 'Like' if white else 'None'
-    song = Song(song_name)
-    recommend_song(widgets, canvas, songs_displayed, song)
+    if (song_num == len(SONG_LIST) - 1):
+        recommend_song(widgets, canvas, songs_displayed)
     print(VOTES)
 
 
@@ -261,11 +264,10 @@ def dislike(widget_num, canvas, widgets, songs_displayed):
     canvas.itemconfig(widgets[widget_num - 2], fill='white')
     canvas.itemconfig(widgets[widget_num - 1], fill='white', outline='white')
 
-    song_name = canvas.itemcget(widgets[widget_num - widget_num % 7 + 1], 'text')
     song_num = SONG_LIST.index(canvas.itemcget(widgets[widget_num - widget_num % 7 + 1], 'text'))
     VOTES[song_num] = 'Dislike' if white else 'None'
-    song = Song(song_name)
-    recommend_song(widgets, canvas, songs_displayed, song)
+    if (song_num == len(SONG_LIST) - 1):
+        recommend_song(widgets, canvas, songs_displayed)
     print(VOTES)
 
 main()
