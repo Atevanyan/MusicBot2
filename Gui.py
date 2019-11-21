@@ -10,7 +10,7 @@ WIDTH, HEIGHT = 1000, 550
 def main():
     window, background, search_text, song_canvas, scroll_bar, widgets, songs_displayed = create_window(WIDTH, HEIGHT)
     search_text.bind("<Button 1>", search_click(search_text))
-    search_text.bind("<Return>", on_enter(widgets, song_canvas, songs_displayed, search_text))
+    search_text.bind("<Return>", get_search_text(search_text, song_canvas, widgets, songs_displayed))
     background.bind("<Button 1>", background_click(search_text))
     song_canvas.bind("<Button 1>", song_canvas_click(search_text, song_canvas, widgets, songs_displayed))
     window.mainloop()
