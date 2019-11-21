@@ -1,13 +1,16 @@
 from tkinter import *
 from math import *
+from spotify import *
 
-SONG_LIST = []#"Hello World", "The Worlds on Fire", "The Reaper", "My First Song", "Testing", "See You Later", "Long Gone", "Death", "Heaven"]
-VOTES = []#"None", "None", "None", "None", "None", "None", "None", "None", "None"]
+SONG_LIST = []
+VOTES = []
+
 WIDTH, HEIGHT = 1000, 550
 
 def main():
     window, background, search_text, song_canvas, scroll_bar, widgets, songs_displayed = create_window(WIDTH, HEIGHT)
     search_text.bind("<Button 1>", search_click(search_text))
+    search_text.bind("<Return>", on_enter(widgets, song_canvas, songs_displayed, search_text))
     background.bind("<Button 1>", background_click(search_text))
     song_canvas.bind("<Button 1>", song_canvas_click(search_text, song_canvas, widgets, songs_displayed))
     window.mainloop()
@@ -26,8 +29,6 @@ def create_window(width, height):
     search_text.config(highlightbackground='white')
     search_text.insert("0", search_message)
     search_text.place(x=int(70 * WIDTH / 550 - WIDTH / 30), y=30)
-
-    
 
     song_canvas = Canvas(window, height = HEIGHT - 200, width = WIDTH - 225)
     song_canvas.place(x = 100, y = 80)      
@@ -58,13 +59,23 @@ def create_window(width, height):
     search_button = Button(window, text="Search", command=get_search_text(search_text, song_canvas, widgets, songs_displayed), width= int(WIDTH / 75))
     search_button.place(x=int(WIDTH - WIDTH/4.5), y = 30)
 
+    add_song = Button(window, text="add_")
+
     return window, background, search_text, song_canvas, scroll_bar, widgets, songs_displayed
 
 def get_search_text(search_text, song_canvas, widgets, songs_displayed):
     def fn(*args):
         temp = search_text.get()
+        n = len(songs_displayed)
+        if n > 0:
+            clear_songs(song_canvas, widgets, songs_displayed)
+        song = Song(temp)
+        tmp = (song.get_related_songs().items())[0]
+        add_one_song(widgets, song_canvas, songs_displayed, tmp)
         return temp
     return fn
+
+    #making a change
 
 #Adds Songs and Votes Spaced out by 45 pixels
 def add_songs(widgets, canvas, songsArray, songs_displayed):
@@ -102,6 +113,11 @@ def add_one_song(widgets, canvas, songs_displayed, song):
             like(len(widgets) - 6, canvas, widgets)
         elif vote == 'Dislike':
             dislike(len(widgets) - 3, canvas, widgets)
+
+def on_enter(widgets, canvas, songs_displayed, search_text):
+    def fn(*args):
+        return
+    return fn
 
 #Clears canvas of songs and votes
 def clear_songs(canvas, widgets, songs_displayed):
@@ -202,6 +218,14 @@ def is_liked(song_canvas, song_num, widgets):
 #Returns whether the downvote fill is blue
 def is_disliked(song_canvas, song_num, widgets):
     return song_canvas.itemcget(widgets[7 * song_num -2], 'fill') == 'blue'
+
+#Returns whether the VOTE at the song index is Like
+def is_liked(song_name):
+    return VOTES[SONG_LIST.index(song_name)] == 'Like'
+
+#Returns whether the VOTE at the song index is Like
+def is_disliked(song_name):
+    return VOTES[SONG_LIST.index(song_name)] == 'Dislike'
 
 #sets the like of the song number of the currently displayed songs to the reverse color and the dislike to white
 def like(widget_num, canvas, widgets):
