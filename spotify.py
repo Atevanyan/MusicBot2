@@ -104,6 +104,9 @@ class Song(spotify):
     def get_related_songs(self):
         genres = self.get_genres(self.artist_id)
         songs =  self.get_genre_tracks(genres)
-        return songs
+        track_array = list()
+        for i in songs.keys():
+            track_array.append(i)
+        return track_array
 
 
