@@ -4,6 +4,8 @@ from spotify import *
 
 SONG_LIST = []
 VOTES = []
+counter = 0
+searched_song = ""
 
 WIDTH, HEIGHT = 1000, 550
 
@@ -65,20 +67,25 @@ def create_window(width, height):
 
 def get_search_text(search_text, song_canvas, widgets, songs_displayed):
     def fn(*args):
-        temp = search_text.get()
+        searched_song = search_text.get()
         #n = len(songs_displayed)
         #if n > 0:
             #clear_songs(song_canvas, widgets, songs_displayed)
-        song = Song(temp)
-        recommend_song(song_canvas, widgets, songs_displayed, song)
-        return temp
+        #song = Song(temp)
+        recommend_song(song_canvas, widgets, songs_displayed)
     return fn
 
-def recommend_song(song_canvas, widgets, songs_displayed, song):
-    song_list = song.get_related_songs()
-    print(len(song_list))
+def recommend_song(song_canvas, widgets, songs_displayed):
+    global searched_song
+    global counter
+    song = Song(searched_song)
+    if counter == 0:
+        song_list = song.get_related_songs()
+        counter += 1
+    #print(len(song_list))
+    #need AI/Recommendation logic here:
     recommended_song = Song(song_list[0])
-    add_one_song(widgets, song_canvas, songs_displayed, song2.track['name'])
+    add_one_song(widgets, song_canvas, songs_displayed, song.track['name'])
 
 #Adds Songs and Votes Spaced out by 45 pixels
 def add_songs(widgets, canvas, songsArray, songs_displayed):
@@ -245,9 +252,9 @@ def like(widget_num, canvas, widgets, songs_displayed):
     song_name = canvas.itemcget(widgets[widget_num - widget_num % 7 + 1], 'text')
     song_num = SONG_LIST.index(canvas.itemcget(widgets[widget_num - widget_num % 7 + 1], 'text'))# + 1
     VOTES[song_num] = 'Like' if white else 'None'
-    song = Song(song_name)
+    #song = Song(song_name)
     print(song_name)
-    recommend_song(canvas, widgets, songs_displayed, song)
+    recommend_song(canvas, widgets, songs_displayed)
     print(VOTES)
 
 
@@ -266,9 +273,9 @@ def dislike(widget_num, canvas, widgets, songs_displayed):
     song_name = canvas.itemcget(widgets[widget_num - widget_num % 7 + 1], 'text')
     song_num = SONG_LIST.index(canvas.itemcget(widgets[widget_num - widget_num % 7 + 1], 'text'))# + 1
     VOTES[song_num] = 'Dislike' if white else 'None'
-    song = Song(song_name)
+    #song = Song(song_name)
     print(song_name)
-    recommend_song(canvas, widgets, songs_displayed, song)
+    recommend_song(canvas, widgets, songs_displayed)
     print(VOTES)
 
 main()
