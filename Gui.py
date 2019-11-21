@@ -1,13 +1,16 @@
 from tkinter import *
 from math import *
+from spotify import *
 
-SONG_LIST = []#"Hello World", "The Worlds on Fire", "The Reaper", "My First Song", "Testing", "See You Later", "Long Gone", "Death", "Heaven"]
-VOTES = []#"None", "None", "None", "None", "None", "None", "None", "None", "None"]
+SONG_LIST = []
+VOTES = []
+
 WIDTH, HEIGHT = 1000, 550
 
 def main():
     window, background, search_text, song_canvas, scroll_bar, widgets, songs_displayed = create_window(WIDTH, HEIGHT)
     search_text.bind("<Button 1>", search_click(search_text))
+    search_text.bind("<Return>", get_search_text(search_text, song_canvas, widgets, songs_displayed))
     background.bind("<Button 1>", background_click(search_text))
     song_canvas.bind("<Button 1>", song_canvas_click(search_text, song_canvas, widgets, songs_displayed))
     window.mainloop()
@@ -26,8 +29,6 @@ def create_window(width, height):
     search_text.config(highlightbackground='white')
     search_text.insert("0", search_message)
     search_text.place(x=int(70 * WIDTH / 550 - WIDTH / 30), y=30)
-
-    
 
     song_canvas = Canvas(window, height = HEIGHT - 200, width = WIDTH - 225)
     song_canvas.place(x = 100, y = 80)      
@@ -58,13 +59,26 @@ def create_window(width, height):
     search_button = Button(window, text="Search", command=get_search_text(search_text, song_canvas, widgets, songs_displayed), width= int(WIDTH / 75))
     search_button.place(x=int(WIDTH - WIDTH/4.5), y = 30)
 
+    add_song = Button(window, text="add_")
+
     return window, background, search_text, song_canvas, scroll_bar, widgets, songs_displayed
 
 def get_search_text(search_text, song_canvas, widgets, songs_displayed):
     def fn(*args):
         temp = search_text.get()
+        #n = len(songs_displayed)
+        #if n > 0:
+            #clear_songs(song_canvas, widgets, songs_displayed)
+        song = Song(temp)
+        recommend_song(song_canvas, widgets, songs_displayed, song)
         return temp
     return fn
+
+def recommend_song(song_canvas, widgets, songs_displayed, song):
+    song_list = song.get_related_songs()
+    print(len(song_list))
+    recommended_song = Song(song_list[0])
+    add_one_song(widgets, song_canvas, songs_displayed, song2.track['name'])
 
 #Adds Songs and Votes Spaced out by 45 pixels
 def add_songs(widgets, canvas, songsArray, songs_displayed):
@@ -102,6 +116,11 @@ def add_one_song(widgets, canvas, songs_displayed, song):
             like(len(widgets) - 6, canvas, widgets)
         elif vote == 'Dislike':
             dislike(len(widgets) - 3, canvas, widgets)
+
+def on_enter(widgets, canvas, songs_displayed, search_text):
+    def fn(*args):
+        return
+    return fn
 
 #Clears canvas of songs and votes
 def clear_songs(canvas, widgets, songs_displayed):
@@ -164,9 +183,9 @@ def song_canvas_click(search_text, canvas, widgets, songs_displayed):
         widget_num, vote = get_widget_num(x, y)
         if widget_num % 7 - 1:
             if (vote == 'like'):
-                like(widget_num, canvas, widgets)
+                like(widget_num, canvas, widgets, songs_displayed)
             if (vote == 'dislike'):
-                dislike(widget_num, canvas, widgets)
+                dislike(widget_num, canvas, widgets, songs_displayed)
         else:
             song_num = get_song_num(y)
             print(songs_displayed[song_num - 1] + " Liked = " + str(is_liked(canvas, song_num, widgets)) + " Disliked = " + str(is_disliked(canvas, song_num, widgets)))
@@ -203,8 +222,16 @@ def is_liked(song_canvas, song_num, widgets):
 def is_disliked(song_canvas, song_num, widgets):
     return song_canvas.itemcget(widgets[7 * song_num -2], 'fill') == 'blue'
 
+#Returns whether the VOTE at the song index is Like
+def is_liked(song_name):
+    return VOTES[SONG_LIST.index(song_name)] == 'Like'
+
+#Returns whether the VOTE at the song index is Like
+def is_disliked(song_name):
+    return VOTES[SONG_LIST.index(song_name)] == 'Dislike'
+
 #sets the like of the song number of the currently displayed songs to the reverse color and the dislike to white
-def like(widget_num, canvas, widgets):
+def like(widget_num, canvas, widgets, songs_displayed):
     global VOTES
     white = canvas.itemcget(widgets[widget_num], 'fill') == 'white'
     fill = 'blue' if white else 'white'
@@ -215,13 +242,17 @@ def like(widget_num, canvas, widgets):
     canvas.itemconfig(widgets[widget_num + 4], fill='white')
     canvas.itemconfig(widgets[widget_num + 5], fill='white', outline='white')
     
-    song_num = SONG_LIST.index(canvas.itemcget(widgets[widget_num - widget_num % 7 + 1], 'text')) + 1
-    VOTES[song_num - 1] = 'Like' if white else 'None'
+    song_name = canvas.itemcget(widgets[widget_num - widget_num % 7 + 1], 'text')
+    song_num = SONG_LIST.index(canvas.itemcget(widgets[widget_num - widget_num % 7 + 1], 'text'))# + 1
+    VOTES[song_num] = 'Like' if white else 'None'
+    song = Song(song_name)
+    print(song_name)
+    recommend_song(canvas, widgets, songs_displayed, song)
     print(VOTES)
 
 
 #sets the dislike of the song number of the currently displayed songs to the revers color and the like to white
-def dislike(widget_num, canvas, widgets):
+def dislike(widget_num, canvas, widgets, songs_displayed):
     global VOTES
     white = canvas.itemcget(widgets[widget_num], 'fill') == 'white'
     fill = 'blue' if white else 'white'
@@ -232,8 +263,12 @@ def dislike(widget_num, canvas, widgets):
     canvas.itemconfig(widgets[widget_num - 2], fill='white')
     canvas.itemconfig(widgets[widget_num - 1], fill='white', outline='white')
 
-    song_num = SONG_LIST.index(canvas.itemcget(widgets[widget_num - widget_num % 7 + 1], 'text')) + 1
-    VOTES[song_num - 1] = 'Dislike' if white else 'None'
+    song_name = canvas.itemcget(widgets[widget_num - widget_num % 7 + 1], 'text')
+    song_num = SONG_LIST.index(canvas.itemcget(widgets[widget_num - widget_num % 7 + 1], 'text'))# + 1
+    VOTES[song_num] = 'Dislike' if white else 'None'
+    song = Song(song_name)
+    print(song_name)
+    recommend_song(canvas, widgets, songs_displayed, song)
     print(VOTES)
 
 main()
