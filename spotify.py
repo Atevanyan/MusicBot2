@@ -39,9 +39,9 @@ class spotify():
 
     #expects a list of genres
     def get_genre_tracks(self, genres):
-        result = {}
+        result = [] #{}
         for genre in genres:
-            result[genre] = []
+            #result[genre] = []
            
            # normalizes string to allow for proper search
             # then reverts it back to original state
@@ -51,7 +51,7 @@ class spotify():
 
             songs = tracklist['tracks']['items']
             for elem in songs:
-                result[genre].append(( elem['name'], self.get_features(elem['id'])))
+                result.append((elem['name'], self.get_features(elem['id'])))#result[genre].append(( elem['name'], self.get_features(elem['id'])))
         return result 
    
    #expects song id, uri, urlid

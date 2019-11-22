@@ -2,10 +2,15 @@ from tkinter import *
 from math import *
 from spotify import *
 
+Weights = {"energy": .2, "danceability": .5}
 SONG_LIST = []
 VOTES = []
 recommended_songs = []
 counter = 0
+dislike_counter = 0
+searched_song = None
+song = None
+searched_features = None
 WIDTH, HEIGHT = 1000, 550
 
 def main():
@@ -64,22 +69,52 @@ def create_window(width, height):
 
 def get_search_text(search_text, song_canvas, widgets, songs_displayed):
     def fn(*args):
-        temp = search_text.get()
-        #n = len(songs_displayed)
-        #if n > 0:
-            #clear_songs(song_canvas, widgets, songs_displayed)
-        song = Song(temp)
+        #temp = search_text.get()
+        global searched_song
+        global song
+        searched_song = search_text.get()
+        song = Song(searched_song)
         
         global recommended_songs
-        song_list = song.get_related_songs()
-        recommended_songs = song_list[song.get_genres(song.artist_id)[0]]
+        #song_list = song.related_songs
+        recommended_songs = song.related_songs #song_list[song.get_genres(song.artist_id)[0]]
         recommend_song(widgets, song_canvas, songs_displayed)
     return fn
 
 def recommend_song(widgets, song_canvas, songs_displayed):
     global counter
-    temp = recommended_songs[counter]
-    add_one_song(widgets, song_canvas, songs_displayed, temp[0])
+    global searched_features
+
+    #save features of the input song into global variable
+    searched_features = song.features 
+    
+    #???get list of recommended songs???
+    #temp = recommended_songs[counter]
+
+    print(searched_features)
+
+    #temp[0].feature 
+    best = None
+    
+    for match in recommended_songs:
+        name = match[0]
+        features = match[1]
+        energy = features[0]['energy']
+        dance = features[0]['danceability']
+        #calculate range for energy 
+        floor_of_energy = searched_features[0]['energy'] - (searched_features[0]['energy'] * Weights['energy'])
+        ceiling_of_energy = searched_features[0]['energy'] + (searched_features[0]['energy'] * Weights['energy'])
+
+        #calculate range for danceability
+        floor_of_dance = searched_features[0]['danceability'] - (searched_features[0]['danceability'] * Weights['danceability'])
+        ceiling_of_dance = searched_features[0]['danceability'] + (searched_features[0]['danceability'] * Weights['danceability'])
+        if ((energy > floor_of_energy and energy <ceiling_of_energy) and (dance > floor_of_dance and dance < ceiling_of_dance)):
+            best = name
+            recommended_songs.remove(match)
+            break
+
+    #push song to GUI for feedback
+    add_one_song(widgets, song_canvas, songs_displayed, best)
     if len(recommended_songs) - 1 > counter:
         counter += 1
 
@@ -255,6 +290,7 @@ def like(widget_num, canvas, widgets, songs_displayed):
 #sets the dislike of the song number of the currently displayed songs to the revers color and the like to white
 def dislike(widget_num, canvas, widgets, songs_displayed):
     global VOTES
+    global dislike_counter
     white = canvas.itemcget(widgets[widget_num], 'fill') == 'white'
     fill = 'blue' if white else 'white'
     canvas.itemconfig(widgets[widget_num], fill=fill)
@@ -263,6 +299,26 @@ def dislike(widget_num, canvas, widgets, songs_displayed):
     canvas.itemconfig(widgets[widget_num - 3], fill='white')
     canvas.itemconfig(widgets[widget_num - 2], fill='white')
     canvas.itemconfig(widgets[widget_num - 1], fill='white', outline='white')
+
+    dislike_counter += 1
+
+    if dislike_counter < 3:
+        Weights['energy'] = (Weights['energy'] +(dislike_counter *.05)) 
+        Weights['danceability'] = (Weights['danceability'] -(dislike_counter *.05)) 
+
+    elif dislike_counter == 3:
+        Weights['energy'] = .2
+        Weights['danceability'] = .5
+
+    elif dislike_counter >= 3:
+        Weights['energy'] = (Weights['energy'] -(dislike_counter *.05)) 
+        Weights['danceability'] = (Weights['danceability'] +(dislike_counter *.05)) 
+
+    if(Weights['energy'] >= 1 or Weights['energy'] <= 0):
+        Weights['energy'] = .2
+
+    if(Weights['danceability'] >= 1 or Weights['danceability'] <= 0):
+       Weights['danceability'] = .5
 
     song_num = SONG_LIST.index(canvas.itemcget(widgets[widget_num - widget_num % 7 + 1], 'text'))
     VOTES[song_num] = 'Dislike' if white else 'None'
