@@ -87,11 +87,6 @@ def recommend_song(widgets, song_canvas, songs_displayed):
 
     #save features of the input song into global variable
     searched_features = song.features 
-    
-    #???get list of recommended songs???
-    #temp = recommended_songs[counter]
-
-    print(searched_features)
 
     #temp[0].feature 
     best = None
