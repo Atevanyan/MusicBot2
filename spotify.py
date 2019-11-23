@@ -5,22 +5,12 @@ import spotipy.util as util
 
 class spotify():
     def __init__(self):
-        self.api_creds = self.pull_api_creds()
         self.credentials = self.get_credentials()
         self.sp = spotipy.Spotify(client_credentials_manager=self.credentials)
-
-    # this pulls the api credentials from text file for security purposes
-    def pull_api_creds(self):
-        api_creds = []
-        with open('api_cred.txt') as f:
-            api_creds.append(f.readline().rstrip())
-            api_creds.append(f.readline().rstrip())
-            f.close
-        return api_creds
     
     # this places our credentials in the client manager for spotify
     def get_credentials(self):
-        creds = SpotifyClientCredentials(client_id = self.api_creds[0], client_secret=self.api_creds[1])
+        creds = SpotifyClientCredentials(client_id = '89ba12dbb318412baa7c3f1c642d17d9', client_secret='47689f35aa354d0dbe06d1b89323561d')
         return creds
  
     # this allows us to pick an indidvidual song from the list of songs retuned from spotipy search
@@ -51,12 +41,16 @@ class spotify():
 
             songs = tracklist['tracks']['items']
             for elem in songs:
-                result.append((elem['name'], self.get_features(elem['id'])))#result[genre].append(( elem['name'], self.get_features(elem['id'])))
+                if(elem['name'].lower() in genre or elem['name'].lower() in 'song'):
+                    continue
+                else:
+                    result.append((elem['name'], self.get_features(elem['id'])))#result[genre].append(( elem['name'], self.get_features(elem['id'])))
         return result 
    
    #expects song id, uri, urlid
     def get_features(self, input):
-       return self.sp.audio_features(input)
+        result = self.sp.audio_features(input)
+        return result[0]
 
     #expects artist id, uri, urlid
     def get_artist(self, input):
@@ -105,5 +99,4 @@ class Song(spotify):
         genres = self.get_genres(self.artist_id)
         songs =  self.get_genre_tracks(genres)
         return songs
-
 
